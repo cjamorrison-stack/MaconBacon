@@ -1,0 +1,15 @@
+# dependency directories
+node_modules/
+
+dist/
+
+# log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# environment files
+.env
+
+# OS files
+.DS_Store
