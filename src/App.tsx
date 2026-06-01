@@ -1,17 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import * as L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { parts, technicians, clients, jobs as initialJobs, quotes as initialQuotes, JobRequest, Quote } from './data';
 
 const locationOptions = ['All locations', 'Johannesburg, ZA', 'Lagos, NG', 'Nairobi, KE', 'Cairo, EG', 'Accra, GH'];
 const categoryOptions = ['All categories', 'Pumps', 'Valves', 'Seals', 'Motors', 'Belts'];
 const priorityOptions = ['Urgent', 'High', 'Medium', 'Low'];
-
-const locationPositions: Record<string, { top: string; left: string }> = {
-  'Lagos, NG': { top: '60%', left: '12%' },
-  'Johannesburg, ZA': { top: '92%', left: '50%' },
-  'Nairobi, KE': { top: '72%', left: '68%' },
-  'Cairo, EG': { top: '28%', left: '72%' },
-  'Accra, GH': { top: '60%', left: '24%' },
-};
 
 function matchesLocation(itemLocation: string, locationFilter: string) {
   return locationFilter === 'All locations' || itemLocation.includes(locationFilter.split(',')[0]);
@@ -68,32 +62,104 @@ function App() {
   const supplierLocationsMap = useMemo(() => {
     const grouped = filteredParts
       .filter((part) => part.stock > 0)
-      .reduce<Record<string, { supplier: string; count: number; stock: number }>>((acc, part) => {
+      .reduce<Record<string, { supplier: string; count: number; stock: number; coords: [number, number] }>>((acc, part) => {
         const existing = acc[part.supplierLocation];
         if (existing) {
           existing.count += 1;
           existing.stock += part.stock;
         } else {
-          acc[part.supplierLocation] = { supplier: part.supplier, count: 1, stock: part.stock };
+          acc[part.supplierLocation] = {
+            supplier: part.supplier,
+            count: 1,
+            stock: part.stock,
+            coords: part.supplierCoordinates,
+          };
         }
         return acc;
       }, {});
 
-    return Object.entries(grouped)
-      .map(([location, info]) => ({
-        location,
-        supplier: info.supplier,
-        partsAvailable: info.count,
-        totalStock: info.stock,
-        coords: locationPositions[location],
-      }))
-      .filter((item) => item.coords);
+    return Object.entries(grouped).map(([location, info]) => ({
+      location,
+      supplier: info.supplier,
+      partsAvailable: info.count,
+      totalStock: info.stock,
+      coords: info.coords,
+    }));
   }, [filteredParts]);
 
   const visibleTechnicians = useMemo(
-    () => filteredTechnicians.filter((tech) => Boolean(locationPositions[tech.location])),
+    () => filteredTechnicians.filter((tech) => Boolean(tech.coordinates)),
     [filteredTechnicians],
   );
+
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const leafletMap = useRef<L.Map | null>(null);
+  const markerLayer = useRef<L.FeatureGroup | null>(null);
+
+  useEffect(() => {
+    if (!mapRef.current || leafletMap.current) {
+      return;
+    }
+
+    leafletMap.current = L.map(mapRef.current, {
+      center: [4.0, 20.0],
+      zoom: 4,
+      minZoom: 3,
+      maxZoom: 7,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(leafletMap.current);
+
+    markerLayer.current = L.featureGroup().addTo(leafletMap.current);
+
+    return () => {
+      markerLayer.current?.clearLayers();
+      leafletMap.current?.remove();
+      leafletMap.current = null;
+      markerLayer.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!leafletMap.current || !markerLayer.current) {
+      return;
+    }
+
+    markerLayer.current.clearLayers();
+
+    const techIcon = L.divIcon({
+      className: 'map-marker-icon tech',
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+      html: '<span />',
+    });
+
+    const supplierIcon = L.divIcon({
+      className: 'map-marker-icon supplier',
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+      html: '<span />',
+    });
+
+    visibleTechnicians.forEach((technician) => {
+      const marker = L.marker(technician.coordinates, { icon: techIcon })
+        .bindPopup(`<strong>${technician.name}</strong><br/>${technician.location}`);
+      markerLayer.current!.addLayer(marker);
+    });
+
+    supplierLocationsMap.forEach((supplier) => {
+      const marker = L.marker(supplier.coords, { icon: supplierIcon })
+        .bindPopup(`<strong>${supplier.supplier}</strong><br/>${supplier.location}<br/>${supplier.partsAvailable} stocked items`);
+      markerLayer.current!.addLayer(marker);
+    });
+
+    const groupBounds = markerLayer.current.getBounds();
+    if (groupBounds.isValid()) {
+      leafletMap.current.fitBounds(groupBounds.pad(0.35), { maxZoom: 6, animate: true });
+    }
+  }, [visibleTechnicians, supplierLocationsMap]);
 
   const totalStock = parts.reduce((sum, part) => sum + part.stock, 0);
   const quoteCount = quotes.length;
@@ -232,32 +298,7 @@ function App() {
         </div>
 
         <div className="map-card">
-          <div className="map-visual" aria-label="Regional technician and supplier map">
-            <div className="map-grid" />
-            {visibleTechnicians.map((technician) => {
-              const coords = locationPositions[technician.location];
-              return coords ? (
-                <div
-                  key={technician.id}
-                  className="map-marker"
-                  style={{ top: coords.top, left: coords.left }}
-                >
-                  <span className="map-pin tech" title={`${technician.name} - ${technician.location}`} />
-                  <span className="map-label">{technician.name}</span>
-                </div>
-              ) : null;
-            })}
-            {supplierLocationsMap.map((supplier) => (
-              <div
-                key={supplier.location}
-                className="map-marker"
-                style={{ top: supplier.coords.top, left: supplier.coords.left }}
-              >
-                <span className="map-pin supplier" title={`${supplier.supplier} - ${supplier.location}`} />
-                <span className="map-label">{supplier.supplier}</span>
-              </div>
-            ))}
-          </div>
+          <div className="map-visual" ref={mapRef} aria-label="Regional technician and supplier map" />
 
           <aside className="map-legend">
             <div className="legend-summary">

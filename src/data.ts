@@ -2,6 +2,7 @@ export type Technician = {
   id: string;
   name: string;
   location: string;
+  coordinates: [number, number];
   distanceKm: number;
   expertise: string[];
   certifications: string[];
@@ -15,6 +16,7 @@ export type Part = {
   category: string;
   supplier: string;
   supplierLocation: string;
+  supplierCoordinates: [number, number];
   stock: number;
   leadTime: string;
   price: string;
@@ -59,6 +61,7 @@ export const technicians: Technician[] = [
     id: 'tech-1',
     name: 'Amina Okafor',
     location: 'Lagos, NG',
+    coordinates: [6.5244, 3.3792],
     distanceKm: 18,
     expertise: ['sanitary pumps', 'valve repair', 'process hygiene'],
     certifications: ['ISO 22000', 'HACCP'],
@@ -69,6 +72,7 @@ export const technicians: Technician[] = [
     id: 'tech-2',
     name: 'Sipho Maseko',
     location: 'Johannesburg, ZA',
+    coordinates: [-26.2041, 28.0473],
     distanceKm: 22,
     expertise: ['stainless welding', 'seals', 'pump alignment'],
     certifications: ['SANS 347', 'NEBB'],
@@ -79,6 +83,7 @@ export const technicians: Technician[] = [
     id: 'tech-3',
     name: 'Nadia Kamau',
     location: 'Nairobi, KE',
+    coordinates: [-1.2864, 36.8172],
     distanceKm: 55,
     expertise: ['motor rebuilds', 'control panels', 'sanitary valves'],
     certifications: ['IEC', 'OSHA-30'],
@@ -89,6 +94,7 @@ export const technicians: Technician[] = [
     id: 'tech-4',
     name: 'Omar Hassan',
     location: 'Cairo, EG',
+    coordinates: [30.0444, 31.2357],
     distanceKm: 110,
     expertise: ['pump systems', 'process piping', 'cleaning in place'],
     certifications: ['CIP', 'AIAG'],
@@ -104,6 +110,7 @@ export const parts: Part[] = [
     category: 'Valves',
     supplier: 'AquaPro Supplies',
     supplierLocation: 'Johannesburg, ZA',
+    supplierCoordinates: [-26.2041, 28.0473],
     stock: 18,
     leadTime: '2 days',
     price: '$375',
@@ -115,6 +122,7 @@ export const parts: Part[] = [
     category: 'Seals',
     supplier: 'Nile Flow Systems',
     supplierLocation: 'Cairo, EG',
+    supplierCoordinates: [30.0444, 31.2357],
     stock: 7,
     leadTime: 'Next-day',
     price: '$145',
@@ -126,6 +134,7 @@ export const parts: Part[] = [
     category: 'Belts',
     supplier: 'Kenya Process Components',
     supplierLocation: 'Nairobi, KE',
+    supplierCoordinates: [-1.2864, 36.8172],
     stock: 11,
     leadTime: '3 days',
     price: '$220',
@@ -137,6 +146,7 @@ export const parts: Part[] = [
     category: 'Pumps',
     supplier: 'Accra Hygiene Tech',
     supplierLocation: 'Accra, GH',
+    supplierCoordinates: [5.6037, -0.1870],
     stock: 4,
     leadTime: '5 days',
     price: '$985',
@@ -148,6 +158,7 @@ export const parts: Part[] = [
     category: 'Motors',
     supplier: 'Lagos Industrial Parts',
     supplierLocation: 'Lagos, NG',
+    supplierCoordinates: [6.5244, 3.3792],
     stock: 9,
     leadTime: '2 days',
     price: '$540',
