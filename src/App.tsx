@@ -5,6 +5,14 @@ const locationOptions = ['All locations', 'Johannesburg, ZA', 'Lagos, NG', 'Nair
 const categoryOptions = ['All categories', 'Pumps', 'Valves', 'Seals', 'Motors', 'Belts'];
 const priorityOptions = ['Urgent', 'High', 'Medium', 'Low'];
 
+const locationPositions: Record<string, { top: string; left: string }> = {
+  'Lagos, NG': { top: '60%', left: '12%' },
+  'Johannesburg, ZA': { top: '92%', left: '50%' },
+  'Nairobi, KE': { top: '72%', left: '68%' },
+  'Cairo, EG': { top: '28%', left: '72%' },
+  'Accra, GH': { top: '60%', left: '24%' },
+};
+
 function matchesLocation(itemLocation: string, locationFilter: string) {
   return locationFilter === 'All locations' || itemLocation.includes(locationFilter.split(',')[0]);
 }
@@ -56,6 +64,36 @@ function App() {
       return locationMatch && queryMatch;
     });
   }, [locationFilter, query]);
+
+  const supplierLocationsMap = useMemo(() => {
+    const grouped = filteredParts
+      .filter((part) => part.stock > 0)
+      .reduce<Record<string, { supplier: string; count: number; stock: number }>>((acc, part) => {
+        const existing = acc[part.supplierLocation];
+        if (existing) {
+          existing.count += 1;
+          existing.stock += part.stock;
+        } else {
+          acc[part.supplierLocation] = { supplier: part.supplier, count: 1, stock: part.stock };
+        }
+        return acc;
+      }, {});
+
+    return Object.entries(grouped)
+      .map(([location, info]) => ({
+        location,
+        supplier: info.supplier,
+        partsAvailable: info.count,
+        totalStock: info.stock,
+        coords: locationPositions[location],
+      }))
+      .filter((item) => item.coords);
+  }, [filteredParts]);
+
+  const visibleTechnicians = useMemo(
+    () => filteredTechnicians.filter((tech) => Boolean(locationPositions[tech.location])),
+    [filteredTechnicians],
+  );
 
   const totalStock = parts.reduce((sum, part) => sum + part.stock, 0);
   const quoteCount = quotes.length;
@@ -181,6 +219,72 @@ function App() {
               ))}
             </select>
           </label>
+        </div>
+      </section>
+
+      <section className="panel map-panel">
+        <div className="panel-header">
+          <div>
+            <p className="panel-eyebrow">Map view</p>
+            <h2>Technicians and stocked suppliers</h2>
+          </div>
+          <span>{visibleTechnicians.length + supplierLocationsMap.length} locations</span>
+        </div>
+
+        <div className="map-card">
+          <div className="map-visual" aria-label="Regional technician and supplier map">
+            <div className="map-grid" />
+            {visibleTechnicians.map((technician) => {
+              const coords = locationPositions[technician.location];
+              return coords ? (
+                <div
+                  key={technician.id}
+                  className="map-marker"
+                  style={{ top: coords.top, left: coords.left }}
+                >
+                  <span className="map-pin tech" title={`${technician.name} - ${technician.location}`} />
+                  <span className="map-label">{technician.name}</span>
+                </div>
+              ) : null;
+            })}
+            {supplierLocationsMap.map((supplier) => (
+              <div
+                key={supplier.location}
+                className="map-marker"
+                style={{ top: supplier.coords.top, left: supplier.coords.left }}
+              >
+                <span className="map-pin supplier" title={`${supplier.supplier} - ${supplier.location}`} />
+                <span className="map-label">{supplier.supplier}</span>
+              </div>
+            ))}
+          </div>
+
+          <aside className="map-legend">
+            <div className="legend-summary">
+              <p className="small-meta">Map overview</p>
+              <p>{visibleTechnicians.length} technicians · {supplierLocationsMap.length} stocked supplier hubs</p>
+            </div>
+            <div className="legend-item">
+              <span className="legend-dot tech" />
+              <div>
+                <strong>Technicians</strong>
+                <p>Local specialists ready to dispatch.</p>
+              </div>
+            </div>
+            <div className="legend-item">
+              <span className="legend-dot supplier" />
+              <div>
+                <strong>Suppliers</strong>
+                <p>Parts suppliers with stock available now.</p>
+              </div>
+            </div>
+            {supplierLocationsMap.map((supplier) => (
+              <div key={supplier.location} className="legend-item supplier-entry">
+                <span>{supplier.location}</span>
+                <small>{supplier.partsAvailable} items · {supplier.totalStock} pieces</small>
+              </div>
+            ))}
+          </aside>
         </div>
       </section>
 

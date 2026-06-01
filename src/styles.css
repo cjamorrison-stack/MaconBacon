@@ -217,6 +217,125 @@ button {
   box-shadow: 0 20px 40px rgba(20, 33, 45, 0.05);
 }
 
+.map-panel {
+  max-width: 100%;
+}
+
+.map-card {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1.3fr) minmax(240px, 1fr);
+  align-items: stretch;
+}
+
+.map-visual {
+  position: relative;
+  min-height: 360px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e6f0ff 0%, #f7fbff 100%);
+  border: 1px solid rgba(31, 94, 255, 0.12);
+  box-shadow: inset 0 10px 30px rgba(31, 94, 255, 0.08);
+}
+
+.map-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 18% 72%, rgba(31, 94, 255, 0.05) 0, transparent 18%),
+    radial-gradient(circle at 50% 40%, rgba(31, 94, 255, 0.06) 0, transparent 16%),
+    radial-gradient(circle at 78% 25%, rgba(242, 139, 63, 0.06) 0, transparent 14%);
+}
+
+.map-marker {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform: translate(-50%, -50%);
+}
+
+.map-pin {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 3px solid white;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+.map-pin.tech {
+  background: var(--primary);
+}
+
+.map-pin.supplier {
+  background: var(--accent);
+}
+
+.map-label {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.map-legend {
+  display: grid;
+  gap: 18px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 22px;
+  padding: 22px;
+  border: 1px solid rgba(31, 94, 255, 0.12);
+}
+
+.legend-summary p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.legend-item {
+  display: grid;
+  gap: 8px;
+}
+
+.legend-item > div {
+  display: grid;
+  gap: 4px;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.legend-dot.tech {
+  background: var(--primary);
+}
+
+.legend-dot.supplier {
+  background: var(--accent);
+}
+
+.supplier-entry {
+  padding: 14px 16px;
+  background: rgba(31, 94, 255, 0.05);
+  border-radius: 18px;
+}
+
+.supplier-entry span {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.supplier-entry small {
+  color: var(--muted);
+}
+
 .panel-header {
   display: flex;
   justify-content: space-between;
