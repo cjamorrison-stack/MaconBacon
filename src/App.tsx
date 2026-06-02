@@ -19,6 +19,8 @@ function App() {
   const [locationFilter, setLocationFilter] = useState(locationOptions[0]);
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(categoryOptions[0]);
+  const [showTechnicians, setShowTechnicians] = useState(true);
+  const [showSuppliers, setShowSuppliers] = useState(true);
   const [jobs, setJobs] = useState<JobRequest[]>(initialJobs);
   const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
   const [selectedQuoteJob, setSelectedQuoteJob] = useState('');
@@ -94,7 +96,8 @@ function App() {
 
   const mapRef = useRef<HTMLDivElement | null>(null);
   const leafletMap = useRef<L.Map | null>(null);
-  const markerLayer = useRef<L.FeatureGroup | null>(null);
+  const techLayer = useRef<L.FeatureGroup | null>(null);
+  const supplierLayer = useRef<L.FeatureGroup | null>(null);
 
   useEffect(() => {
     if (!mapRef.current || leafletMap.current) {
@@ -112,22 +115,26 @@ function App() {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(leafletMap.current);
 
-    markerLayer.current = L.featureGroup().addTo(leafletMap.current);
+    techLayer.current = L.featureGroup().addTo(leafletMap.current);
+    supplierLayer.current = L.featureGroup().addTo(leafletMap.current);
 
     return () => {
-      markerLayer.current?.clearLayers();
+      techLayer.current?.clearLayers();
+      supplierLayer.current?.clearLayers();
       leafletMap.current?.remove();
       leafletMap.current = null;
-      markerLayer.current = null;
+      techLayer.current = null;
+      supplierLayer.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (!leafletMap.current || !markerLayer.current) {
+    if (!leafletMap.current || !techLayer.current || !supplierLayer.current) {
       return;
     }
 
-    markerLayer.current.clearLayers();
+    techLayer.current.clearLayers();
+    supplierLayer.current.clearLayers();
 
     const techIcon = L.divIcon({
       className: 'map-marker-icon tech',
@@ -146,20 +153,46 @@ function App() {
     visibleTechnicians.forEach((technician) => {
       const marker = L.marker(technician.coordinates, { icon: techIcon })
         .bindPopup(`<strong>${technician.name}</strong><br/>${technician.location}`);
-      markerLayer.current!.addLayer(marker);
+      techLayer.current!.addLayer(marker);
     });
 
     supplierLocationsMap.forEach((supplier) => {
       const marker = L.marker(supplier.coords, { icon: supplierIcon })
         .bindPopup(`<strong>${supplier.supplier}</strong><br/>${supplier.location}<br/>${supplier.partsAvailable} stocked items`);
-      markerLayer.current!.addLayer(marker);
+      supplierLayer.current!.addLayer(marker);
     });
 
-    const groupBounds = markerLayer.current.getBounds();
-    if (groupBounds.isValid()) {
-      leafletMap.current.fitBounds(groupBounds.pad(0.35), { maxZoom: 6, animate: true });
+    if (showTechnicians) {
+      if (!leafletMap.current.hasLayer(techLayer.current)) {
+        techLayer.current.addTo(leafletMap.current);
+      }
+    } else {
+      if (leafletMap.current.hasLayer(techLayer.current)) {
+        leafletMap.current.removeLayer(techLayer.current);
+      }
     }
-  }, [visibleTechnicians, supplierLocationsMap]);
+
+    if (showSuppliers) {
+      if (!leafletMap.current.hasLayer(supplierLayer.current)) {
+        supplierLayer.current.addTo(leafletMap.current);
+      }
+    } else {
+      if (leafletMap.current.hasLayer(supplierLayer.current)) {
+        leafletMap.current.removeLayer(supplierLayer.current);
+      }
+    }
+
+    const activeLayers = [] as L.FeatureGroup[];
+    if (showTechnicians) activeLayers.push(techLayer.current);
+    if (showSuppliers) activeLayers.push(supplierLayer.current);
+
+    if (activeLayers.length) {
+      const groupBounds = L.featureGroup(activeLayers).getBounds();
+      if (groupBounds.isValid()) {
+        leafletMap.current.fitBounds(groupBounds.pad(0.35), { maxZoom: 6, animate: true });
+      }
+    }
+  }, [visibleTechnicians, supplierLocationsMap, showTechnicians, showSuppliers]);
 
   const totalStock = parts.reduce((sum, part) => sum + part.stock, 0);
   const quoteCount = quotes.length;
@@ -305,15 +338,33 @@ function App() {
               <p className="small-meta">Map overview</p>
               <p>{visibleTechnicians.length} technicians · {supplierLocationsMap.length} stocked supplier hubs</p>
             </div>
+            <div className="legend-toggle">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={showTechnicians}
+                  onChange={(event) => setShowTechnicians(event.target.checked)}
+                />
+                <span className="legend-dot tech" />
+                Technicians
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={showSuppliers}
+                  onChange={(event) => setShowSuppliers(event.target.checked)}
+                />
+                <span className="legend-dot supplier" />
+                Suppliers
+              </label>
+            </div>
             <div className="legend-item">
-              <span className="legend-dot tech" />
               <div>
                 <strong>Technicians</strong>
                 <p>Local specialists ready to dispatch.</p>
               </div>
             </div>
             <div className="legend-item">
-              <span className="legend-dot supplier" />
               <div>
                 <strong>Suppliers</strong>
                 <p>Parts suppliers with stock available now.</p>

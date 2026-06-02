@@ -282,6 +282,25 @@ button {
   color: var(--muted);
 }
 
+.legend-toggle {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.legend-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.legend-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
 .legend-item {
   display: grid;
   gap: 8px;
